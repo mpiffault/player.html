@@ -1,8 +1,11 @@
 * {
-  margin: 0px 0px 0px 0px;
+  margin : 0px 0px 0px 0px;
   padding: 0px 0px 0px 0px;
+  border : 0px 0px 0px 0px;
 }
 html {
+  background: black;
+  color: white;
 }
 body {
   width: 100%;
@@ -13,5 +16,5 @@ h1, h2, h3, h4 {
 audio {
   width: 100%;
   padding: 0px 0px 0px 0px;
-  margin: 0px 0px 0px 0px;
+  margin : 0px 0px 0px 0px;
 }

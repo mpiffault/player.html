@@ -21,10 +21,10 @@ if(typeof(String.prototype.trim) === "undefined")
 
 function main () {
   // Prepare environment
-  init_env();
+  prepare_environment();
   log("Elements created.");
   // Elegant recursion over subfolders
-  get_files();
+  recursion(configuration["music"]["url"]);
   // that's all.
 }
 
@@ -48,7 +48,7 @@ function log(msg) {
   }
 }
 
-function init_env () {
+function prepare_environment () {
   // create HTML elements
   // audio
   add_element("audio",{controls:""});
@@ -61,7 +61,7 @@ function init_env () {
 
 function add_element(nature,attributes) {
   // function which appendChild a <nature> element to document.body
-  // the <nature> element will have attributes. see init_env().
+  // the <nature> element will have attributes. see prepare_environment().
   var x = document.createElement(nature);
   for (var key in attributes) {
     if (attributes.hasOwnProperty(key)) {
@@ -71,12 +71,30 @@ function add_element(nature,attributes) {
   document.body.appendChild(x);
 }
 
-function get_files() {
-  recursion(configuration["music"]["url"]);
+function recursion(path) {
+  // Launch request on path
+  log("Downloading «"+path+"»");
+  var request = new XMLHttpRequest();
+  request.open("GET", '//'+path);
+  request.onreadystatechange = function () {
+    if (request.readyState === 4 && request.status === 200) {
+      parse_page(request.responseText,path);
+    }
+  }
+  request.send(null)
 }
 
-function recursion(path) {
-  log("lol todo"+path);
+function parse_page(page,path) {
+  log("Got page « "+path+" »");
+  log(page);
+  // todo find all hrefs (with native XML/DOM parsing)
+  // delete parameters (apache sort-by indexes)
+  // identify folders (ending in «/»)
+  // filter out those pointing to ../
+  // identify music files
+  // add music files to playlist
+  // launch recursion on all subfolders
 }
+
 // When all this project will be put in one file, I'll use onDomContentLoaded or some other hipster trick.
 window.addEventListener("load",main);
