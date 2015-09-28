@@ -1,6 +1,6 @@
 configuration = {
   music: {
-    url: "//localhost:8000/",
+    url: "//localhost/",
     extensions: ["ogg","mp3","wav"], // too much information ?
   },
   console: {
@@ -73,7 +73,7 @@ function add_element(nature,attributes) {
 
 function recursion(path) {
   // Launch request on path
-  log("Downloading «"+path+"»");
+  log("Downloading « "+path+" »");
   var request = new XMLHttpRequest();
   request.open("GET", '//'+path);
   request.onreadystatechange = function () {
@@ -86,15 +86,46 @@ function recursion(path) {
 
 function parse_page(page,path) {
   log("Got page « "+path+" »");
-  log(page);
+  // log(page);
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(page, "text/html");
   // todo find all hrefs (with native XML/DOM parsing)
+  var links = doc.getElementsByTagName("a");
   // delete parameters (apache sort-by indexes)
-  // identify folders (ending in «/»)
-  // filter out those pointing to ../
-  // identify music files
-  // add music files to playlist
-  // launch recursion on all subfolders
+  var length = links.length;
+  for (var i = 0; i < length; i++) {
+    var href = links[i].getAttribute("href");
+    // identify folders (ending in «/»)
+    if (href.slice(-1) === "/") {
+      // no dot folder (.git)
+      // filter out those pointing to ../
+      if (href.slice(0,1) !== ".") {
+        log("Going in subfolder « "+href+" »");
+        // launch recursion on all subfolders
+        recursion(path+href);
+      } else {
+        log("Skipping folder « "+href+" »");
+      }
+    } else {
+      // identify music files
+      if (correct_filename(href) === true) {
+        log("YAY WE FOUND "+decodeURIComponent(href));
+        // add music files to playlist
+        // TODO
+      }
+    }
+  }
 }
 
-// When all this project will be put in one file, I'll use onDomContentLoaded or some other hipster trick.
-window.addEventListener("load",main);
+function correct_filename(filename) {
+  /*
+  if filename.split(".")[-1] in configuration["music"]["extensions"]:
+    return True
+  */
+  var parts = filename.split(".");
+  if (parts.length === 1 || ( parts[0] === "" && parts.length === 2 ) ) { return false; }
+  if (configuration["music"]["extensions"].indexOf(parts.slice(-1)[0]) >=0) { return true; }
+  return false;
+}
+
+window.addEventListener("DOMContentLoaded", main);
