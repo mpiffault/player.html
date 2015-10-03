@@ -1,6 +1,8 @@
+
 configuration = {
   music: {
-    url: "//localhost/",
+    // url: "//localhost/",
+    url: window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1),
     extensions: ["ogg","mp3","wav"], // too much information ?
   },
   console: {
@@ -51,15 +53,15 @@ function log(msg) {
 function prepare_environment () {
   // create HTML elements
   // audio
-  add_element("audio",{controls:""});
+  add_element(document.body,"audio",{controls:"",type:"audio/ogg"});
   // folder list
-  add_element("ul",{id:"list"});
+  add_element(document.body,"ul",{id:"list"});
   // console
-  add_element("pre",{id:"console"});
+  add_element(document.body,"pre",{id:"console"});
 
 }
 
-function add_element(nature,attributes) {
+function add_element(_parent,nature,attributes) {
   // function which appendChild a <nature> element to document.body
   // the <nature> element will have attributes. see prepare_environment().
   var x = document.createElement(nature);
@@ -68,14 +70,15 @@ function add_element(nature,attributes) {
       x.setAttribute(key,attributes[key]);
     }
   }
-  document.body.appendChild(x);
+  _parent.appendChild(x);
+  return x;
 }
 
 function recursion(path) {
   // Launch request on path
   log("Downloading « "+path+" »");
   var request = new XMLHttpRequest();
-  request.open("GET", '//'+path);
+  request.open("GET", path);
   request.onreadystatechange = function () {
     if (request.readyState === 4 && request.status === 200) {
       parse_page(request.responseText,path);
@@ -109,14 +112,39 @@ function parse_page(page,path) {
     } else {
       // identify music files
       if (correct_filename(href) === true) {
-        log("YAY WE FOUND "+decodeURIComponent(href));
+        log("Found music file « "+decodeURIComponent(href)+" » in "+folderlist(path).join('/'));
         // add music files to playlist
-        // TODO
+        add_music(path,href);
       }
     }
   }
 }
 
+function add_music(path,href) {
+  li = add_element(document.getElementById("list"),"li",{
+    music_folder:path,
+    music_filename:href,
+    music_path:[path,href].join('')
+  });
+  f = add_element(li,"span",{class:"album"});
+  f.appendChild(document.createTextNode(folderlist(path).join('/')));
+  n = add_element(li,"span",{class:"track"});
+  n.appendChild(document.createTextNode(decodeURIComponent(href)));
+  li.addEventListener("click",change_track);
+}
+
+function folderlist(path) {
+  console.log(path);
+  list = path.split('/');
+  console.log(list);
+  nl = [];
+  for (i=0;i<list.length+1;i++) {
+    if (list[i] != '') {
+      nl.push(list[i]);
+    }
+  }
+  return nl;
+}
 function correct_filename(filename) {
   /*
   if filename.split(".")[-1] in configuration["music"]["extensions"]:
@@ -126,6 +154,19 @@ function correct_filename(filename) {
   if (parts.length === 1 || ( parts[0] === "" && parts.length === 2 ) ) { return false; }
   if (configuration["music"]["extensions"].indexOf(parts.slice(-1)[0]) >=0) { return true; }
   return false;
+}
+
+function change_track(event) {
+  target = event.target;
+  // find the parent <li>
+  li = target;
+  while (li.tagName.toLowerCase() !== "li") {
+    li = li.parentElement;
+  }
+  src = li.attributes.music_path.value;
+  audio = document.getElementsByTagName("audio")[0];
+  audio.src = src;
+  audio.play();
 }
 
 window.addEventListener("DOMContentLoaded", main);
