@@ -18,10 +18,15 @@ audio {
   padding: 0px 0px 0px 0px;
   margin : 0px 0px 0px 0px;
 }
+li {
+  background:#222;
+  display:inline-block;
+}
 .album {
   color: #aaf;
   padding-right:5px;
 }
 .track {
   color: #fda;
+  cursor: pointer;
 }

@@ -7,7 +7,7 @@ configuration = {
   },
   console: {
     log: true,
-    visible: true,
+    visible: false,
   }
 }
 music_tree = {}
@@ -53,12 +53,44 @@ function log(msg) {
 function prepare_environment () {
   // create HTML elements
   // audio
-  add_element(document.body,"audio",{controls:"",type:"audio/ogg"});
+  add_element(document.body,"audio",{controls:""});
   // folder list
   add_element(document.body,"ul",{id:"list"});
   // console
   add_element(document.body,"pre",{id:"console"});
 
+  // check URL parameters
+  if (window.location.search.indexOf("debug") >= 0) {
+    configuration["console"]["visible"] = true;
+  }
+
+  document.addEventListener("keydown",keyboard_handler);
+}
+
+function keyboard_handler(event) {
+  switch (event.keyCode) {
+    case 0x20:
+      log("Toggle pause keyboard event.");
+      var player = document.getElementsByTagName("audio")[0];
+      if (player.paused === true) {
+        player.play();
+      } else {
+        player.pause();
+      }
+      break;
+    case 39:
+      log("Next song keyboard event.");
+      break;
+    case 37:
+      log("Previous song keyboard event.");
+      break;
+    case 38:
+    case 40:
+      // Scroll up/down to see the console, don't append to console :D
+      break;
+    default:
+      log("Unkown key "+event.keyCode);
+  }
 }
 
 function add_element(_parent,nature,attributes) {
@@ -127,16 +159,14 @@ function add_music(path,href) {
     music_path:[path,href].join('')
   });
   f = add_element(li,"span",{class:"album"});
-  f.appendChild(document.createTextNode(folderlist(path).join('/')));
+  f.appendChild(document.createTextNode(decodeURIComponent(folderlist(path).join('/'))));
   n = add_element(li,"span",{class:"track"});
   n.appendChild(document.createTextNode(decodeURIComponent(href)));
   li.addEventListener("click",change_track);
 }
 
 function folderlist(path) {
-  console.log(path);
   list = path.split('/');
-  console.log(list);
   nl = [];
   for (i=0;i<list.length+1;i++) {
     if (list[i] != '') {
