@@ -20,7 +20,11 @@ audio {
 }
 li {
   background:#222;
-  display:inline-block;
+  display:inline;
+}
+li:after {
+  content:'\A';
+  white-space: pre;
 }
 .album {
   color: #aaf;

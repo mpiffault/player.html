@@ -3,10 +3,10 @@ configuration = {
   music: {
     // url: "//localhost/",
     url: window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1),
-    extensions: ["ogg","mp3","wav"], // too much information ?
+    extensions: ["ogg","mp3","wav","flac"], // too much information ?
   },
   console: {
-    log: true,
+    log: false,
     visible: false,
   }
 }
