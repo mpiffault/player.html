@@ -1,16 +1,13 @@
-
 configuration = {
   music: {
-    // url: "//localhost/",
     url: window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1),
-    extensions: ["ogg","mp3","wav","flac"], // too much information ?
+    extensions: ["ogg","mp3","wav"],
   },
   console: {
     log: false,
     visible: false,
   }
 }
-music_tree = {}
 
 // http://stackoverflow.com/questions/1418050/string-strip-for-javascript
 if(typeof(String.prototype.trim) === "undefined")
@@ -22,12 +19,18 @@ if(typeof(String.prototype.trim) === "undefined")
 }
 
 function main () {
-  // Prepare environment
-  prepare_environment();
-  log("Elements created.");
-  // Elegant recursion over subfolders
-  recursion(configuration["music"]["url"]);
-  // that's all.
+  add_element(document.body,"audio",{controls:""});
+  add_element(document.body,"ul",{id:"list"});
+  add_element(document.body,"pre",{id:"console"});
+
+  // check URL parameters
+  if (window.location.search.indexOf("debug") >= 0) {
+    configuration["console"]["visible"] = true;
+  }
+
+  // Recursion over subfolders
+  download(configuration["music"]["url"]);
+  document.addEventListener("keydown",keyboard_handler);
 }
 
 function log(msg) {
@@ -48,23 +51,6 @@ function log(msg) {
       console.log(msg);
     }
   }
-}
-
-function prepare_environment () {
-  // create HTML elements
-  // audio
-  add_element(document.body,"audio",{controls:""});
-  // folder list
-  add_element(document.body,"ul",{id:"list"});
-  // console
-  add_element(document.body,"pre",{id:"console"});
-
-  // check URL parameters
-  if (window.location.search.indexOf("debug") >= 0) {
-    configuration["console"]["visible"] = true;
-  }
-
-  document.addEventListener("keydown",keyboard_handler);
 }
 
 function keyboard_handler(event) {
@@ -94,8 +80,8 @@ function keyboard_handler(event) {
 }
 
 function add_element(_parent,nature,attributes) {
-  // function which appendChild a <nature> element to document.body
-  // the <nature> element will have attributes. see prepare_environment().
+  // function which appendChild a <nature> element to _parent
+  // the <nature> element will have attributes. see main().
   var x = document.createElement(nature);
   for (var key in attributes) {
     if (attributes.hasOwnProperty(key)) {
@@ -106,7 +92,7 @@ function add_element(_parent,nature,attributes) {
   return x;
 }
 
-function recursion(path) {
+function download(path) {
   // Launch request on path
   log("Downloading « "+path+" »");
   var request = new XMLHttpRequest();
@@ -136,8 +122,9 @@ function parse_page(page,path) {
       // filter out those pointing to ../
       if (href.slice(0,1) !== ".") {
         log("Going in subfolder « "+href+" »");
-        // launch recursion on all subfolders
-        recursion(path+href);
+        // launch download on all subfolders
+        // recursion
+        download(path+href);
       } else {
         log("Skipping folder « "+href+" »");
       }
