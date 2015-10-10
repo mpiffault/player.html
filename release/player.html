@@ -8,9 +8,9 @@ configuration = {
   music: {
     url: window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1),
     extensions: ["ogg","mp3","wav"],
-    autoplay: true,
+    autoplay: true
   },
-  log: false,
+  log: false
 }
 
 function main () {
@@ -156,9 +156,9 @@ function add_music(path,href) {
   li = add_element(document.getElementById("list"),"li",{
     music_path:[path,href].join('')
   });
-  f = add_element(li,"span",{class:"album"});
+  f = add_element(li,"span",{"class":"album"});
   f.appendChild(document.createTextNode(decodeURIComponent(path)));
-  n = add_element(li,"span",{class:"track"});
+  n = add_element(li,"span",{"class":"track"});
   n.appendChild(document.createTextNode(decodeURIComponent(href)));
   li.addEventListener("click",change_track);
 }
