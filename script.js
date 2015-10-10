@@ -2,30 +2,20 @@ configuration = {
   music: {
     url: window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1),
     extensions: ["ogg","mp3","wav"],
+    autoplay: true,
   },
-  console: {
-    log: false,
-    visible: false,
-  }
-}
-
-// http://stackoverflow.com/questions/1418050/string-strip-for-javascript
-if(typeof(String.prototype.trim) === "undefined")
-{
-  String.prototype.trim = function()
-  {
-    return String(this).replace(/^\s+|\s+$/g, '');
-  };
+  log: false,
 }
 
 function main () {
-  add_element(document.body,"audio",{controls:""});
+  audio = add_element(document.body,"audio",{controls:""});
+  audio.onended = ended_handler;
   add_element(document.body,"ul",{id:"list"});
   add_element(document.body,"pre",{id:"console"});
 
   // check URL parameters
   if (window.location.search.indexOf("debug") >= 0) {
-    configuration["console"]["visible"] = true;
+    configuration["log"] = true;
   }
 
   // Recursion over subfolders
@@ -33,23 +23,9 @@ function main () {
   document.addEventListener("keydown",keyboard_handler);
 }
 
-function log(msg) {
-  if ( configuration["console"]["log"] === true ) {
-    if (configuration["console"]["visible"] === true ) {
-      // use <pre id="console">
-      var c = document.getElementById("console");
-      if (c === null) {
-        // no viewable console
-        // log error ? lolol
-        console.log(msg);
-      } else {
-        // todo: strip
-        c.appendChild(document.createTextNode(msg.trim()+"\n"));
-      }
-    } else {
-      // use browser console
-      console.log(msg);
-    }
+function log(x) {
+  if ( configuration["log"] === true ) {
+    console.log(x);
   }
 }
 
@@ -66,16 +42,47 @@ function keyboard_handler(event) {
       break;
     case 39:
       log("Next song keyboard event.");
+      next_song(1);
       break;
     case 37:
       log("Previous song keyboard event.");
-      break;
-    case 38:
-    case 40:
-      // Scroll up/down to see the console, don't append to console :D
+      next_song(-1);
       break;
     default:
       log("Unkown key "+event.keyCode);
+  }
+}
+
+function ended_handler(evt) {
+  if (configuration["music"]["autoplay"] === true) {
+    next_song(1);
+  }
+}
+
+function next_song (shift) {
+  audio = document.getElementsByTagName("audio")[0];
+  audio.pause();
+  li = current_song_li();
+  if (shift == 1) {
+    nli = li.nextElementSibling;
+  } else {
+    nli = li.previousElementSibling;
+  }
+  audio.src = nli.attributes.music_path.value;
+  audio.play();
+  li.className = "";
+  nli.className = "playing";
+}
+
+function current_song_li () {
+  audio = document.getElementsByTagName("audio")[0];
+  if (audio.attributes.src !== undefined) {
+    list = document.getElementById("list").childNodes;
+    for (var i = 0; i < list.length - 1; i++ ) {
+      if (list[i].attributes.music_path.value === audio.attributes.src.value) {
+        return list[i];
+      }
+    }
   }
 }
 
@@ -131,7 +138,7 @@ function parse_page(page,path) {
     } else {
       // identify music files
       if (correct_filename(href) === true) {
-        log("Found music file « "+decodeURIComponent(href)+" » in "+folderlist(path).join('/'));
+        log("Found music file « "+decodeURIComponent(href)+" » in "+path);
         // add music files to playlist
         add_music(path,href);
       }
@@ -141,45 +148,36 @@ function parse_page(page,path) {
 
 function add_music(path,href) {
   li = add_element(document.getElementById("list"),"li",{
-    music_folder:path,
-    music_filename:href,
     music_path:[path,href].join('')
   });
   f = add_element(li,"span",{class:"album"});
-  f.appendChild(document.createTextNode(decodeURIComponent(folderlist(path).join('/'))));
+  f.appendChild(document.createTextNode(decodeURIComponent(path)));
   n = add_element(li,"span",{class:"track"});
   n.appendChild(document.createTextNode(decodeURIComponent(href)));
   li.addEventListener("click",change_track);
 }
 
-function folderlist(path) {
-  list = path.split('/');
-  nl = [];
-  for (i=0;i<list.length+1;i++) {
-    if (list[i] != '') {
-      nl.push(list[i]);
-    }
-  }
-  return nl;
-}
 function correct_filename(filename) {
-  /*
-  if filename.split(".")[-1] in configuration["music"]["extensions"]:
-    return True
-  */
-  var parts = filename.split(".");
-  if (parts.length === 1 || ( parts[0] === "" && parts.length === 2 ) ) { return false; }
-  if (configuration["music"]["extensions"].indexOf(parts.slice(-1)[0]) >=0) { return true; }
-  return false;
+  if (configuration["music"]["extensions"].indexOf( filename.split(".").slice(-1)[0] ) >=0 ) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 function change_track(event) {
+  li = current_song_li();
+  if (typeof(li) === "object") {
+    li.className = "";
+  }
+
   target = event.target;
   // find the parent <li>
   li = target;
   while (li.tagName.toLowerCase() !== "li") {
     li = li.parentElement;
   }
+  li.className = "playing";
   src = li.attributes.music_path.value;
   audio = document.getElementsByTagName("audio")[0];
   audio.src = src;

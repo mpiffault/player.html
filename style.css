@@ -34,3 +34,6 @@ li:after {
   color: #fda;
   cursor: pointer;
 }
+.playing {
+  background: #444;
+}
