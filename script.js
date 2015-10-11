@@ -1,10 +1,6 @@
 configuration = {
-  music: {
-    url: window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1),
-    extensions: ["ogg","mp3","wav"],
-    autoplay: true
-  },
-  log: false
+  extensions: ["ogg","mp3","wav"],
+  autoplay: true
 }
 
 function main () {
@@ -12,44 +8,35 @@ function main () {
   audio.onended = ended_handler;
   add_element(document.body,"ul",{id:"list"});
   add_element(document.body,"pre",{id:"console"});
-
-  // check URL parameters
-  if (window.location.search.indexOf("debug") >= 0) {
-    configuration["log"] = true;
+  
+  autoplay_song = window.location.search.match(/auto=[^&]*/);
+  if (autoplay_song !== null) {
+    configuration["autoplay_song"] = new RegExp(autoplay_song[0].slice(5),'i');
   }
 
   // Recursion over subfolders
-  download(configuration["music"]["url"]);
+  download(window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1));
   document.addEventListener("keydown",keyboard_handler);
-}
-
-function log(x) {
-  if ( configuration["log"] === true ) {
-    console.log(x);
-  }
 }
 
 function keyboard_handler(event) {
   switch (event.keyCode) {
     case 0x20:
-      log("Toggle pause keyboard event.");
       var player = document.getElementsByTagName("audio")[0];
       if (player.paused === true) {
         player.play();
       } else {
         player.pause();
       }
+      event.preventDefault();
       break;
     case 39:
-      log("Next song keyboard event.");
       next_song(1);
       break;
     case 37:
-      log("Previous song keyboard event.");
       next_song(-1);
       break;
     default:
-      log("Unkown key "+event.keyCode);
   }
 }
 
@@ -101,7 +88,6 @@ function add_element(_parent,nature,attributes) {
 
 function download(path) {
   // Launch request on path
-  log("Downloading « "+path+" »");
   var request = new XMLHttpRequest();
   request.open("GET", path);
   request.onreadystatechange = function () {
@@ -113,8 +99,6 @@ function download(path) {
 }
 
 function parse_page(page,path) {
-  log("Got page « "+path+" »");
-  // log(page);
   var parser = new DOMParser();
   var doc = parser.parseFromString(page, "text/html");
   // todo find all hrefs (with native XML/DOM parsing)
@@ -128,17 +112,14 @@ function parse_page(page,path) {
       // no dot folder (.git)
       // filter out those pointing to ../
       if (href.slice(0,1) !== ".") {
-        log("Going in subfolder « "+href+" »");
         // launch download on all subfolders
         // recursion
         download(path+href);
       } else {
-        log("Skipping folder « "+href+" »");
       }
     } else {
       // identify music files
       if (correct_filename(href) === true) {
-        log("Found music file « "+decodeURIComponent(href)+" » in "+path);
         // add music files to playlist
         add_music(path,href);
       }
@@ -155,10 +136,14 @@ function add_music(path,href) {
   n = add_element(li,"span",{"class":"track"});
   n.appendChild(document.createTextNode(decodeURIComponent(href)));
   li.addEventListener("click",change_track);
+  if (href.search(configuration["autoplay_song"]) !== -1) {
+    li.click();
+    configuration["autoplay_song"] = /^$/;
+  }
 }
 
 function correct_filename(filename) {
-  if (configuration["music"]["extensions"].indexOf( filename.split(".").slice(-1)[0] ) >=0 ) {
+  if (configuration["extensions"].indexOf( filename.split(".").slice(-1)[0] ) >=0 ) {
     return true;
   } else {
     return false;

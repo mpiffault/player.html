@@ -16,6 +16,7 @@ audio {
 li {
   background:#222;
   display:inline;
+  cursor: pointer;
 }
 li:after {
   content:'\A';
@@ -27,7 +28,6 @@ li:after {
 }
 .track {
   color: #fda;
-  cursor: pointer;
 }
 .playing {
   background: #444;
