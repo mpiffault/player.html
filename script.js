@@ -41,7 +41,7 @@ function keyboard_handler(event) {
 }
 
 function ended_handler(evt) {
-  if (configuration["music"]["autoplay"] === true) {
+  if (configuration["autoplay"] === true) {
     next_song(1);
   }
 }
