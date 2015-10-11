@@ -1,0 +1,22 @@
+<!DOCTYPE HTML><html><head><meta charset="UTF-8" /><script>
+configuration={music:{url:window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1),extensions:["ogg","mp3","wav"],autoplay:!0},log:!1};
+function main(){audio=add_element(document.body,"audio",{controls:""});audio.onended=ended_handler;add_element(document.body,"ul",{id:"list"});add_element(document.body,"pre",{id:"console"});0<=window.location.search.indexOf("debug")&&(configuration.log=!0);download(configuration.music.url);document.addEventListener("keydown",keyboard_handler)}function log(a){!0===configuration.log&&console.log(a)}
+function keyboard_handler(a){switch(a.keyCode){case 32:log("Toggle pause keyboard event.");a=document.getElementsByTagName("audio")[0];!0===a.paused?a.play():a.pause();break;case 39:log("Next song keyboard event.");next_song(1);break;case 37:log("Previous song keyboard event.");next_song(-1);break;default:log("Unkown key "+a.keyCode)}}function ended_handler(a){!0===configuration.music.autoplay&&next_song(1)}
+function next_song(a){audio=document.getElementsByTagName("audio")[0];audio.pause();li=current_song_li();nli=1==a?li.nextElementSibling:li.previousElementSibling;audio.src=nli.attributes.music_path.value;audio.play();li.className="";nli.className="playing"}
+function current_song_li(){audio=document.getElementsByTagName("audio")[0];if(void 0!==audio.attributes.src){list=document.getElementById("list").childNodes;for(var a=0;a<list.length-1;a++)if(list[a].attributes.music_path.value===audio.attributes.src.value)return list[a]}}function add_element(a,b,d){b=document.createElement(b);for(var e in d)d.hasOwnProperty(e)&&b.setAttribute(e,d[e]);a.appendChild(b);return b}
+function download(a){log("Downloading \u00ab "+a+" \u00bb");var b=new XMLHttpRequest;b.open("GET",a);b.onreadystatechange=function(){4===b.readyState&&200===b.status&&parse_page(b.responseText,a)};b.send(null)}
+function parse_page(a,b){log("Got page \u00ab "+b+" \u00bb");for(var d=(new DOMParser).parseFromString(a,"text/html").getElementsByTagName("a"),e=d.length,g=0;g<e;g++){var c=d[g].getAttribute("href");"/"===c.slice(-1)?"."!==c.slice(0,1)?(log("Going in subfolder \u00ab "+c+" \u00bb"),download(b+c)):log("Skipping folder \u00ab "+c+" \u00bb"):!0===correct_filename(c)&&(log("Found music file \u00ab "+decodeURIComponent(c)+" \u00bb in "+b),add_music(b,c))}}
+function add_music(a,b){li=add_element(document.getElementById("list"),"li",{music_path:[a,b].join("")});f=add_element(li,"span",{"class":"album"});f.appendChild(document.createTextNode(decodeURIComponent(a)));n=add_element(li,"span",{"class":"track"});n.appendChild(document.createTextNode(decodeURIComponent(b)));li.addEventListener("click",change_track)}function correct_filename(a){return 0<=configuration.music.extensions.indexOf(a.split(".").slice(-1)[0])?!0:!1}
+function change_track(a){li=current_song_li();"object"===typeof li&&(li.className="");for(li=target=a.target;"li"!==li.tagName.toLowerCase();)li=li.parentElement;li.className="playing";src=li.attributes.music_path.value;audio=document.getElementsByTagName("audio")[0];audio.src=src;audio.play()}window.addEventListener("DOMContentLoaded",main);
+</script><style>
+*{margin :0px 0px 0px 0px;padding:0px 0px 0px 0px;border :0px 0px 0px 0px}
+html{background:black;color:white}
+body{width:100%}
+h1, h2, h3, h4{font-weight:normal}
+audio{width:100%;padding:0px 0px 0px 0px;margin :0px 0px 0px 0px}
+li{background:#222;display:inline}
+li:after{content:'\A';white-space:pre}
+.album{color:#aaf;padding-right:5px}
+.track{color:#fda;cursor:pointer}
+.playing{background:#444}
+</style></head><body></body></html>
