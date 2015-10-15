@@ -1,15 +1,19 @@
+var SPACE = 32;
+var LEFT = 37;
+var RIGHT = 39;
+
 configuration = {
   extensions: ["ogg","mp3","wav"],
   autoplay: true
-}
+};
 
 function main () {
-  audio = add_element(document.body,"audio",{controls:""});
-  audio.onended = ended_handler;
-  add_element(document.body,"ul",{id:"list"});
-  add_element(document.body,"pre",{id:"console"});
-  
-  autoplay_song = window.location.search.match(/auto=[^&]*/);
+  var audio = addElement(document.body,"audio",{controls:""});
+  audio.onended = endedHandler;
+  addElement(document.body,"ul",{id:"list"});
+  addElement(document.body,"pre",{id:"console"});
+
+  var autoplay_song = window.location.search.match(/auto=[^&]*/);
   if (autoplay_song !== null) {
     configuration["autoplay_song"] = new RegExp(autoplay_song[0].slice(5),'i');
   }
@@ -20,36 +24,31 @@ function main () {
 }
 
 function keyboard_handler(event) {
-  switch (event.keyCode) {
-    case 0x20:
-      var player = document.getElementsByTagName("audio")[0];
-      if (player.paused === true) {
-        player.play();
-      } else {
-        player.pause();
-      }
-      event.preventDefault();
-      break;
-    case 39:
-      next_song(1);
-      break;
-    case 37:
-      next_song(-1);
-      break;
-    default:
+  var player = document.getElementsByTagName("audio")[0];
+  if (event.keyCode === SPACE) {
+    if (player.paused === true) {
+      player.play();
+    } else {
+      player.pause();
+    }
+    event.preventDefault();
+  } else if (event.keyCode === LEFT) {
+    changeSong(1);
+  } else if (event.keyCode === RIGHT) {
+    changeSong(-1);
   }
 }
 
-function ended_handler(evt) {
+function endedHandler(evt) {
   if (configuration["autoplay"] === true) {
-    next_song(1);
+    changeSong(1);
   }
 }
 
-function next_song (shift) {
-  audio = document.getElementsByTagName("audio")[0];
+function changeSong (shift) {
+  var audio = document.getElementsByTagName("audio")[0];
   audio.pause();
-  li = current_song_li();
+  var li = playingListElement();
   if (shift == 1) {
     nli = li.nextElementSibling;
   } else {
@@ -61,10 +60,10 @@ function next_song (shift) {
   nli.className = "playing";
 }
 
-function current_song_li () {
-  audio = document.getElementsByTagName("audio")[0];
+function playingListElement () {
+  var audio = document.getElementsByTagName("audio")[0];
   if (audio.attributes.src !== undefined) {
-    list = document.getElementById("list").childNodes;
+    var list = document.getElementById("list").childNodes;
     for (var i = 0; i < list.length - 1; i++ ) {
       if (list[i].attributes.music_path.value === audio.attributes.src.value) {
         return list[i];
@@ -73,17 +72,15 @@ function current_song_li () {
   }
 }
 
-function add_element(_parent,nature,attributes) {
-  // function which appendChild a <nature> element to _parent
-  // the <nature> element will have attributes. see main().
-  var x = document.createElement(nature);
+function addElement(_parent,nature,attributes) {
+  var newElement = document.createElement(nature);
   for (var key in attributes) {
     if (attributes.hasOwnProperty(key)) {
-      x.setAttribute(key,attributes[key]);
+      newElement.setAttribute(key,attributes[key]);
     }
   }
-  _parent.appendChild(x);
-  return x;
+  _parent.appendChild(newElement);
+  return newElement;
 }
 
 function download(path) {
@@ -92,79 +89,64 @@ function download(path) {
   request.open("GET", path);
   request.onreadystatechange = function () {
     if (request.readyState === 4 && request.status === 200) {
-      parse_page(request.responseText,path);
+      parsePage(request.responseText,path);
     }
-  }
+  };
   request.send(null)
 }
 
-function parse_page(page,path) {
+function parsePage(page,path) {
   var parser = new DOMParser();
   var doc = parser.parseFromString(page, "text/html");
-  // todo find all hrefs (with native XML/DOM parsing)
   var links = doc.getElementsByTagName("a");
-  // delete parameters (apache sort-by indexes)
-  var length = links.length;
-  for (var i = 0; i < length; i++) {
+  for (var i = 0; i < links.length; i++) {
     var href = links[i].getAttribute("href");
-    // identify folders (ending in «/»)
     if (href.slice(-1) === "/") {
-      // no dot folder (.git)
-      // filter out those pointing to ../
       if (href.slice(0,1) !== ".") {
-        // launch download on all subfolders
-        // recursion
         download(path+href);
-      } else {
       }
-    } else {
-      // identify music files
-      if (correct_filename(href) === true) {
-        // add music files to playlist
-        add_music(path,href);
-      }
+    } else if (correctFilename(href) === true) {
+      addMusicUri(path, href);
     }
   }
 }
 
-function add_music(path,href) {
-  li = add_element(document.getElementById("list"),"li",{
-    music_path:[path,href].join('')
+function addMusicUri(dirPath,href) {
+  var li = addElement(document.getElementById("list"),"li",{
+    music_path:[dirPath,href].join('')
   });
-  f = add_element(li,"span",{"class":"album"});
-  f.appendChild(document.createTextNode(decodeURIComponent(path)));
-  n = add_element(li,"span",{"class":"track"});
-  n.appendChild(document.createTextNode(decodeURIComponent(href)));
-  li.addEventListener("click",change_track);
+
+  var directory = addElement(li,"span",{"class":"album"});
+  directory.appendChild(document.createTextNode(decodeURIComponent(dirPath)));
+
+  var fileName = addElement(li,"span",{"class":"track"});
+  fileName.appendChild(document.createTextNode(decodeURIComponent(href)));
+
+  li.addEventListener("click",changeTrack);
   if (href.search(configuration["autoplay_song"]) !== -1) {
     li.click();
     configuration["autoplay_song"] = /^$/;
   }
 }
 
-function correct_filename(filename) {
-  if (configuration["extensions"].indexOf( filename.split(".").slice(-1)[0] ) >=0 ) {
-    return true;
-  } else {
-    return false;
-  }
+function correctFilename(filename) {
+  return configuration["extensions"].indexOf(filename.split(".").slice(-1)[0]) >= 0;
 }
 
-function change_track(event) {
-  li = current_song_li();
+function changeTrack(event) {
+  var li = playingListElement();
   if (typeof(li) === "object") {
     li.className = "";
   }
 
-  target = event.target;
   // find the parent <li>
-  li = target;
+  li = event.target;
   while (li.tagName.toLowerCase() !== "li") {
     li = li.parentElement;
   }
   li.className = "playing";
-  src = li.attributes.music_path.value;
-  audio = document.getElementsByTagName("audio")[0];
+  var src = li.attributes.music_path.value;
+  var audio = document.getElementsByTagName("audio")[0];
   audio.src = src;
   audio.play();
 }
