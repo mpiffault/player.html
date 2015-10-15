@@ -1,6 +1,7 @@
 var SPACE = 32;
 var LEFT = 37;
 var RIGHT = 39;
+var player;
 
 configuration = {
   extensions: ["ogg","mp3","wav"],
@@ -8,8 +9,8 @@ configuration = {
 };
 
 function main () {
-  var audio = addElement(document.body,"audio",{controls:""});
-  audio.onended = endedHandler;
+  player = addElement(document.body,"audio",{controls:""});
+  player.onended = endedHandler;
   addElement(document.body,"ul",{id:"list"});
   addElement(document.body,"pre",{id:"console"});
 
@@ -20,11 +21,10 @@ function main () {
 
   // Recursion over subfolders
   download(window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1));
-  document.addEventListener("keydown",keyboard_handler);
+  document.addEventListener("keydown",keyboardHandler);
 }
 
-function keyboard_handler(event) {
-  var player = document.getElementsByTagName("audio")[0];
+function keyboardHandler(event) {
   if (event.keyCode === SPACE) {
     if (player.paused === true) {
       player.play();
@@ -46,26 +46,25 @@ function endedHandler(evt) {
 }
 
 function changeSong (shift) {
-  var audio = document.getElementsByTagName("audio")[0];
-  audio.pause();
-  var li = playingListElement();
+  player.pause();
+  var currentTrackElement = playingListElement();
+  var nextTrackElement;
   if (shift == 1) {
-    nli = li.nextElementSibling;
+    nextTrackElement = currentTrackElement.nextElementSibling;
   } else {
-    nli = li.previousElementSibling;
+    nextTrackElement = currentTrackElement.previousElementSibling;
   }
-  audio.src = nli.attributes.music_path.value;
-  audio.play();
-  li.className = "";
-  nli.className = "playing";
+  player.src = nextTrackElement.attributes.music_path.value;
+  player.play();
+  currentTrackElement.className = "";
+  nextTrackElement.className = "playing";
 }
 
 function playingListElement () {
-  var audio = document.getElementsByTagName("audio")[0];
-  if (audio.attributes.src !== undefined) {
+  if (player.attributes.src !== undefined) {
     var list = document.getElementById("list").childNodes;
-    for (var i = 0; i < list.length - 1; i++ ) {
-      if (list[i].attributes.music_path.value === audio.attributes.src.value) {
+    for (var i = 0; i <= list.length; i++) {
+      if (list[i].attributes.music_path.value === player.attributes.src.value) {
         return list[i];
       }
     }
@@ -84,7 +83,6 @@ function addElement(_parent,nature,attributes) {
 }
 
 function download(path) {
-  // Launch request on path
   var request = new XMLHttpRequest();
   request.open("GET", path);
   request.onreadystatechange = function () {
@@ -112,19 +110,19 @@ function parsePage(page,path) {
 }
 
 function addMusicUri(dirPath,href) {
-  var li = addElement(document.getElementById("list"),"li",{
+  var newEntry = addElement(document.getElementById("list"),"li",{
     music_path:[dirPath,href].join('')
   });
 
-  var directory = addElement(li,"span",{"class":"album"});
+  var directory = addElement(newEntry,"span",{"class":"album"});
   directory.appendChild(document.createTextNode(decodeURIComponent(dirPath)));
 
-  var fileName = addElement(li,"span",{"class":"track"});
+  var fileName = addElement(newEntry,"span",{"class":"track"});
   fileName.appendChild(document.createTextNode(decodeURIComponent(href)));
 
-  li.addEventListener("click",changeTrack);
+  newEntry.addEventListener("click",changeTrack);
   if (href.search(configuration["autoplay_song"]) !== -1) {
-    li.click();
+    newEntry.click();
     configuration["autoplay_song"] = /^$/;
   }
 }
@@ -134,21 +132,18 @@ function correctFilename(filename) {
 }
 
 function changeTrack(event) {
-  var li = playingListElement();
-  if (typeof(li) === "object") {
-    li.className = "";
+  var currentTrackElement = playingListElement();
+  if (typeof(currentTrackElement) === "object") {
+    currentTrackElement.className = "";
   }
 
-  // find the parent <li>
-  li = event.target;
-  while (li.tagName.toLowerCase() !== "li") {
-    li = li.parentElement;
+  var nexTrackElement = event.target;
+  while (nexTrackElement.tagName.toLowerCase() !== "li") {
+    nexTrackElement = nexTrackElement.parentElement;
   }
-  li.className = "playing";
-  var src = li.attributes.music_path.value;
-  var audio = document.getElementsByTagName("audio")[0];
-  audio.src = src;
-  audio.play();
+  nexTrackElement.className = "playing";
+  player.src = nexTrackElement.attributes.music_path.value;
+  player.play();
 }
 
 window.addEventListener("DOMContentLoaded", main);
