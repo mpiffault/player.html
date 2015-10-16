@@ -17,9 +17,9 @@
 
     tracksList = addElement(document.body, 'ul', {id: 'list'});
 
-    var autoplay_song = window.location.search.match(/auto=[^&]*/);
-    if (autoplay_song !== null) {
-      configuration.autoplay_song = new RegExp(autoplay_song[0].slice(5), 'i');
+    var autoplaySong = window.location.search.match(/auto=[^&]*/);
+    if (autoplaySong !== null) {
+      configuration.autoplaySong = new RegExp(autoplaySong[0].slice(5), 'i');
     }
 
     // Recursion over subfolders
@@ -58,7 +58,7 @@
     } else {
       nextTrackElement = currentTrackElement.previousElementSibling;
     }
-    player.src = nextTrackElement.attributes.music_path.value;
+    player.src = nextTrackElement.attributes.musicPath.value;
     player.play();
     currentTrackElement.className = '';
     nextTrackElement.className = 'playing';
@@ -68,7 +68,7 @@
     if (player.attributes.src !== undefined) {
       var list = document.getElementById('list').childNodes;
       for (var i = 0; i <= list.length; i++) {
-        if (list[i].attributes.music_path.value === player.attributes.src.value) {
+        if (list[i].attributes.musicPath.value === player.attributes.src.value) {
           return list[i];
         }
       }
@@ -115,7 +115,7 @@
 
   function addMusicUri(dirPath, href) {
     var newEntry = addElement(document.getElementById('list'), 'li', {
-      music_path: [dirPath, href].join('')
+      musicPath: [dirPath, href].join('')
     });
 
     var directory = addElement(newEntry, 'span', {'class': 'album'});
@@ -125,9 +125,9 @@
     fileName.appendChild(document.createTextNode(decodeURIComponent(href)));
 
     newEntry.addEventListener('click', playTrack);
-    if (href.search(configuration.autoplay_song) !== -1) {
+    if (href.search(configuration.autoplaySong) !== -1) {
       newEntry.click();
-      configuration.autoplay_song = /^$/;
+      configuration.autoplaySong = /^$/;
     }
   }
 
@@ -147,7 +147,7 @@
       nexTrackElement = nexTrackElement.parentElement;
     }
     nexTrackElement.className = 'playing';
-    player.src = nexTrackElement.attributes.music_path.value;
+    player.src = nexTrackElement.attributes.musicPath.value;
     player.play();
   }
 
