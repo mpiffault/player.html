@@ -4,179 +4,161 @@
 <meta charset="UTF-8" />
 <script>
 
-configuration = {
-  extensions: ["ogg","mp3","wav"],
-  autoplay: true
-}
+(function() {
+  'use strict';
 
-function main () {
-  audio = add_element(document.body,"audio",{controls:""});
-  audio.onended = ended_handler;
-  add_element(document.body,"ul",{id:"list"});
-  add_element(document.body,"pre",{id:"console"});
-  
-  autoplay_song = window.location.search.match(/auto=[^&]*/);
-  if (autoplay_song !== null) {
-    configuration["autoplay_song"] = new RegExp(autoplay_song[0].slice(5),'i');
+  var SPACE = 32;
+  var LEFT = 37;
+  var RIGHT = 39;
+  var player, tracksList;
+
+  var configuration = {
+    extensions: ['ogg', 'mp3', 'wav'],
+    autoplay: true
+  };
+
+  function main() {
+    player = addElement(document.body, 'audio', {controls: ''});
+    player.onended = endedHandler;
+
+    tracksList = addElement(document.body, 'ul', {id: 'list'});
+
+    var autoplaySong = window.location.search.match(/auto=[^&]*/);
+    if (autoplaySong !== null) {
+      configuration.autoplaySong = new RegExp(autoplaySong[0].slice(5), 'i');
+    }
+
+    // Recursion over subfolders
+    download(window.location.pathname.substring(0,
+        window.location.pathname.lastIndexOf('/') + 1));
+    document.addEventListener('keydown', keyboardHandler);
   }
 
-  // Recursion over subfolders
-  download(window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/")+1));
-  document.addEventListener("keydown",keyboard_handler);
-}
-
-function keyboard_handler(event) {
-  switch (event.keyCode) {
-    case 0x20:
-      var player = document.getElementsByTagName("audio")[0];
+  function keyboardHandler(event) {
+    if (event.keyCode === SPACE) {
       if (player.paused === true) {
         player.play();
       } else {
         player.pause();
       }
       event.preventDefault();
-      break;
-    case 39:
-      next_song(1);
-      break;
-    case 37:
-      next_song(-1);
-      break;
-    default:
-  }
-}
-
-function ended_handler(evt) {
-  if (configuration["autoplay"] === true) {
-    next_song(1);
-  }
-}
-
-function next_song (shift) {
-  audio = document.getElementsByTagName("audio")[0];
-  audio.pause();
-  li = current_song_li();
-  if (shift == 1) {
-    nli = li.nextElementSibling;
-  } else {
-    nli = li.previousElementSibling;
-  }
-  audio.src = nli.attributes.music_path.value;
-  audio.play();
-  li.className = "";
-  nli.className = "playing";
-}
-
-function current_song_li () {
-  audio = document.getElementsByTagName("audio")[0];
-  if (audio.attributes.src !== undefined) {
-    list = document.getElementById("list").childNodes;
-    for (var i = 0; i < list.length - 1; i++ ) {
-      if (list[i].attributes.music_path.value === audio.attributes.src.value) {
-        return list[i];
-      }
+    } else if (event.keyCode === LEFT) {
+      changeSong(1);
+    } else if (event.keyCode === RIGHT) {
+      changeSong(-1);
     }
   }
-}
 
-function add_element(_parent,nature,attributes) {
-  // function which appendChild a <nature> element to _parent
-  // the <nature> element will have attributes. see main().
-  var x = document.createElement(nature);
-  for (var key in attributes) {
-    if (attributes.hasOwnProperty(key)) {
-      x.setAttribute(key,attributes[key]);
+  function endedHandler(evt) {
+    if (configuration.autoplay === true) {
+      changeSong(1);
     }
   }
-  _parent.appendChild(x);
-  return x;
-}
 
-function download(path) {
-  // Launch request on path
-  var request = new XMLHttpRequest();
-  request.open("GET", path);
-  request.onreadystatechange = function () {
-    if (request.readyState === 4 && request.status === 200) {
-      parse_page(request.responseText,path);
-    }
-  }
-  request.send(null)
-}
-
-function parse_page(page,path) {
-  var parser = new DOMParser();
-  var doc = parser.parseFromString(page, "text/html");
-  // todo find all hrefs (with native XML/DOM parsing)
-  var links = doc.getElementsByTagName("a");
-  // delete parameters (apache sort-by indexes)
-  var length = links.length;
-  for (var i = 0; i < length; i++) {
-    var href = links[i].getAttribute("href");
-    // identify folders (ending in «/»)
-    if (href.slice(-1) === "/") {
-      // no dot folder (.git)
-      // filter out those pointing to ../
-      if (href.slice(0,1) !== ".") {
-        // launch download on all subfolders
-        // recursion
-        download(path+href);
-      } else {
-      }
+  function changeSong(shift) {
+    player.pause();
+    var currentTrackElement = playingListElement();
+    var nextTrackElement;
+    if (shift === 1) {
+      nextTrackElement = currentTrackElement.nextElementSibling;
     } else {
-      // identify music files
-      if (correct_filename(href) === true) {
-        // add music files to playlist
-        add_music(path,href);
+      nextTrackElement = currentTrackElement.previousElementSibling;
+    }
+    player.src = nextTrackElement.attributes.musicPath.value;
+    player.play();
+    currentTrackElement.className = '';
+    nextTrackElement.className = 'playing';
+  }
+
+  function playingListElement() {
+    if (player.attributes.src !== undefined) {
+      var list = document.getElementById('list').childNodes;
+      for (var i = 0; i <= list.length; i++) {
+        if (list[i].attributes.musicPath.value === player.attributes.src.value) {
+          return list[i];
+        }
       }
     }
   }
-}
 
-function add_music(path,href) {
-  li = add_element(document.getElementById("list"),"li",{
-    music_path:[path,href].join('')
-  });
-  f = add_element(li,"span",{"class":"album"});
-  f.appendChild(document.createTextNode(decodeURIComponent(path)));
-  n = add_element(li,"span",{"class":"track"});
-  n.appendChild(document.createTextNode(decodeURIComponent(href)));
-  li.addEventListener("click",change_track);
-  if (href.search(configuration["autoplay_song"]) !== -1) {
-    li.click();
-    configuration["autoplay_song"] = /^$/;
-  }
-}
-
-function correct_filename(filename) {
-  if (configuration["extensions"].indexOf( filename.split(".").slice(-1)[0] ) >=0 ) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-function change_track(event) {
-  li = current_song_li();
-  if (typeof(li) === "object") {
-    li.className = "";
+  function addElement(_parent, nature, attributes) {
+    var newElement = document.createElement(nature);
+    for (var key in attributes) {
+      if (attributes.hasOwnProperty(key)) {
+        newElement.setAttribute(key, attributes[key]);
+      }
+    }
+    _parent.appendChild(newElement);
+    return newElement;
   }
 
-  target = event.target;
-  // find the parent <li>
-  li = target;
-  while (li.tagName.toLowerCase() !== "li") {
-    li = li.parentElement;
+  function download(path) {
+    var request = new XMLHttpRequest();
+    request.open('GET', path);
+    request.onreadystatechange = function () {
+      if (request.readyState === 4 && request.status === 200) {
+        parsePage(request.responseText, path);
+      }
+    };
+    request.send(null);
   }
-  li.className = "playing";
-  src = li.attributes.music_path.value;
-  audio = document.getElementsByTagName("audio")[0];
-  audio.src = src;
-  audio.play();
-}
 
-window.addEventListener("DOMContentLoaded", main);
+  function parsePage(page, path) {
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(page, 'text/html');
+    var links = doc.getElementsByTagName('a');
+    for (var i = 0; i < links.length; i++) {
+      var href = links[i].getAttribute('href');
+      if (href.slice(-1) === '/') {
+        if (href.slice(0, 1) !== '.') {
+          download(path + href);
+        }
+      } else if (isFileNameValid(href) === true) {
+        addMusicUri(path, href);
+      }
+    }
+  }
 
+  function addMusicUri(dirPath, href) {
+    var newEntry = addElement(document.getElementById('list'), 'li', {
+      musicPath: [dirPath, href].join('')
+    });
+
+    var directory = addElement(newEntry, 'span', {'class': 'album'});
+    directory.appendChild(document.createTextNode(decodeURIComponent(dirPath)));
+
+    var fileName = addElement(newEntry, 'span', {'class': 'track'});
+    fileName.appendChild(document.createTextNode(decodeURIComponent(href)));
+
+    newEntry.addEventListener('click', playTrack);
+    if (href.search(configuration.autoplaySong) !== -1) {
+      newEntry.click();
+      configuration.autoplaySong = /^$/;
+    }
+  }
+
+  function isFileNameValid(filename) {
+    var extension = filename.split('.').slice(-1)[0];
+    return configuration.extensions.indexOf(extension) >= 0;
+  }
+
+  function playTrack(event) {
+    var currentTrackElement = playingListElement();
+    if (typeof(currentTrackElement) === 'object') {
+      currentTrackElement.className = '';
+    }
+
+    var nexTrackElement = event.target;
+    while (nexTrackElement.tagName.toLowerCase() !== 'li') {
+      nexTrackElement = nexTrackElement.parentElement;
+    }
+    nexTrackElement.className = 'playing';
+    player.src = nexTrackElement.attributes.musicPath.value;
+    player.play();
+  }
+
+  window.addEventListener('DOMContentLoaded', main);
+}());
 </script>
 <style>
 
