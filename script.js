@@ -5,6 +5,8 @@
   var LEFT = 37;
   var RIGHT = 39;
   var player, tracksList;
+  var BASE_LOCATION;
+  var BASE_URL;
 
   var configuration = {
     extensions: ['ogg', 'mp3', 'wav'],
@@ -23,8 +25,10 @@
     }
 
     // Recursion over subfolders
-    download(window.location.pathname.substring(0,
-        window.location.pathname.lastIndexOf('/') + 1));
+     BASE_LOCATION = window.location.pathname.substring(0,
+        window.location.pathname.lastIndexOf('/') + 1);
+    BASE_URL = window.location.protocol + '//' + window.location.host;
+    download(BASE_LOCATION);
     document.addEventListener('keydown', keyboardHandler);
   }
 
@@ -87,14 +91,16 @@
   }
 
   function download(path) {
-    var request = new XMLHttpRequest();
-    request.open('GET', path);
-    request.onreadystatechange = function () {
-      if (request.readyState === 4 && request.status === 200) {
-        parsePage(request.responseText, path);
-      }
-    };
-    request.send(null);
+    if (path.slice(-2) !== '//') {
+      var request = new XMLHttpRequest();
+      request.open('GET', path);
+      request.onreadystatechange = function () {
+        if (request.readyState === 4 && request.status === 200) {
+          parsePage(request.responseText, path);
+        }
+      };
+      request.send(null);
+    }
   }
 
   function parsePage(page, path) {
@@ -103,7 +109,7 @@
     var links = doc.getElementsByTagName('a');
     for (var i = 0; i < links.length; i++) {
       var href = links[i].getAttribute('href');
-      if (href.slice(-1) === '/') {
+      if (href.slice(-1) === '/' && href.slice(0,4) !== 'http') {
         if (href.slice(0, 1) !== '.') {
           download(path + href);
         }
