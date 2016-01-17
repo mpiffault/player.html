@@ -5,165 +5,167 @@
 <script>
 
 (function() {
-  'use strict';
+    'use strict';
 
-  var SPACE = 32;
-  var LEFT = 37;
-  var RIGHT = 39;
-  var player, tracksList;
-  var BASE_LOCATION;
-  var BASE_URL;
+    var SPACE = 32;
+    var LEFT = 37;
+    var RIGHT = 39;
+    var player, tracksList, audioWrapper, listWrapper;
+    var BASE_LOCATION;
+    var BASE_URL;
 
-  var configuration = {
-    extensions: ['ogg', 'mp3', 'wav'],
-    autoplay: true
-  };
+    var configuration = {
+        extensions: ['ogg', 'mp3', 'wav'],
+        autoplay: true
+    };
 
-  function main() {
-    player = addElement(document.body, 'audio', {controls: ''});
-    player.onended = endedHandler;
+    function main() {
+        listWrapper = addElement(document.body, 'div', {class: 'listWrapper'});
+        tracksList = addElement(listWrapper, 'ul', {id: 'list'});
 
-    tracksList = addElement(document.body, 'ul', {id: 'list'});
+        audioWrapper = addElement(document.body, 'div', {class: 'audioWrapper'});
+        player = addElement(audioWrapper, 'audio', {controls: ''});
+        player.onended = endedHandler;
 
-    var autoplaySong = window.location.search.match(/auto=[^&]*/);
-    if (autoplaySong !== null) {
-      configuration.autoplaySong = new RegExp(autoplaySong[0].slice(5), 'i');
+        var autoplaySong = window.location.search.match(/auto=[^&]*/);
+        if (autoplaySong !== null) {
+            configuration.autoplaySong = new RegExp(autoplaySong[0].slice(5), 'i');
+        }
+
+        // Recursion over subfolders
+        BASE_LOCATION = window.location.pathname.substring(0,
+            window.location.pathname.lastIndexOf('/') + 1);
+        BASE_URL = window.location.protocol + '//' + window.location.host;
+        download(BASE_LOCATION);
+        document.addEventListener('keydown', keyboardHandler);
     }
 
-    // Recursion over subfolders
-     BASE_LOCATION = window.location.pathname.substring(0,
-        window.location.pathname.lastIndexOf('/') + 1);
-    BASE_URL = window.location.protocol + '//' + window.location.host;
-    download(BASE_LOCATION);
-    document.addEventListener('keydown', keyboardHandler);
-  }
+    function keyboardHandler(event) {
+        if (event.keyCode === SPACE) {
+            if (player.paused === true) {
+                player.play();
+            } else {
+                player.pause();
+            }
+            event.preventDefault();
+        } else if (event.keyCode === LEFT) {
+            changeSong(1);
+        } else if (event.keyCode === RIGHT) {
+            changeSong(-1);
+        }
+    }
 
-  function keyboardHandler(event) {
-    if (event.keyCode === SPACE) {
-      if (player.paused === true) {
-        player.play();
-      } else {
+    function endedHandler() {
+        if (configuration.autoplay === true) {
+            changeSong(1);
+        }
+    }
+
+    function changeSong(shift) {
         player.pause();
-      }
-      event.preventDefault();
-    } else if (event.keyCode === LEFT) {
-      changeSong(1);
-    } else if (event.keyCode === RIGHT) {
-      changeSong(-1);
-    }
-  }
-
-  function endedHandler(evt) {
-    if (configuration.autoplay === true) {
-      changeSong(1);
-    }
-  }
-
-  function changeSong(shift) {
-    player.pause();
-    var currentTrackElement = playingListElement();
-    var nextTrackElement;
-    if (shift === 1) {
-      nextTrackElement = currentTrackElement.nextElementSibling;
-    } else {
-      nextTrackElement = currentTrackElement.previousElementSibling;
-    }
-    player.src = nextTrackElement.attributes.musicPath.value;
-    player.play();
-    currentTrackElement.className = '';
-    nextTrackElement.className = 'playing';
-  }
-
-  function playingListElement() {
-    if (player.attributes.src !== undefined) {
-      var list = document.getElementById('list').childNodes;
-      for (var i = 0; i <= list.length; i++) {
-        if (list[i].attributes.musicPath.value === player.attributes.src.value) {
-          return list[i];
+        var currentTrackElement = playingListElement();
+        var nextTrackElement;
+        if (shift === 1) {
+            nextTrackElement = currentTrackElement.nextElementSibling;
+        } else {
+            nextTrackElement = currentTrackElement.previousElementSibling;
         }
-      }
+        player.src = nextTrackElement.attributes.musicPath.value;
+        currentTrackElement.className = '';
+        nextTrackElement.className = 'playing';
+        player.play();
     }
-  }
 
-  function addElement(_parent, nature, attributes) {
-    var newElement = document.createElement(nature);
-    for (var key in attributes) {
-      if (attributes.hasOwnProperty(key)) {
-        newElement.setAttribute(key, attributes[key]);
-      }
-    }
-    _parent.appendChild(newElement);
-    return newElement;
-  }
-
-  function download(path) {
-    if (path.slice(-2) !== '//') {
-      var request = new XMLHttpRequest();
-      request.open('GET', path);
-      request.onreadystatechange = function () {
-        if (request.readyState === 4 && request.status === 200) {
-          parsePage(request.responseText, path);
+    function playingListElement() {
+        if (player.attributes.src !== undefined) {
+            var list = document.getElementById('list').childNodes;
+            for (var i = 0; i <= list.length; i++) {
+                if (list[i].attributes.musicPath.value === player.attributes.src.value) {
+                    return list[i];
+                }
+            }
         }
-      };
-      request.send(null);
     }
-  }
 
-  function parsePage(page, path) {
-    var parser = new DOMParser();
-    var doc = parser.parseFromString(page, 'text/html');
-    var links = doc.getElementsByTagName('a');
-    for (var i = 0; i < links.length; i++) {
-      var href = links[i].getAttribute('href');
-      if (href.slice(-1) === '/' && href.slice(0,4) !== 'http') {
-        if (href.slice(0, 1) !== '.') {
-          download(path + href);
+    function addElement(_parent, nature, attributes) {
+        var newElement = document.createElement(nature);
+        for (var key in attributes) {
+            if (attributes.hasOwnProperty(key)) {
+                newElement.setAttribute(key, attributes[key]);
+            }
         }
-      } else if (isFileNameValid(href) === true) {
-        addMusicUri(path, href);
-      }
-    }
-  }
-
-  function addMusicUri(dirPath, href) {
-    var newEntry = addElement(document.getElementById('list'), 'li', {
-      musicPath: [dirPath, href].join('')
-    });
-
-    var directory = addElement(newEntry, 'span', {'class': 'album'});
-    directory.appendChild(document.createTextNode(decodeURIComponent(dirPath)));
-
-    var fileName = addElement(newEntry, 'span', {'class': 'track'});
-    fileName.appendChild(document.createTextNode(decodeURIComponent(href)));
-
-    newEntry.addEventListener('click', playTrack);
-    if (href.search(configuration.autoplaySong) !== -1) {
-      newEntry.click();
-      configuration.autoplaySong = /^$/;
-    }
-  }
-
-  function isFileNameValid(filename) {
-    var extension = filename.split('.').slice(-1)[0];
-    return configuration.extensions.indexOf(extension) >= 0;
-  }
-
-  function playTrack(event) {
-    var currentTrackElement = playingListElement();
-    if (typeof(currentTrackElement) === 'object') {
-      currentTrackElement.className = '';
+        _parent.appendChild(newElement);
+        return newElement;
     }
 
-    var nexTrackElement = event.target;
-    while (nexTrackElement.tagName.toLowerCase() !== 'li') {
-      nexTrackElement = nexTrackElement.parentElement;
+    function download(path) {
+        if (path.slice(-2) !== '//') {
+            var request = new XMLHttpRequest();
+            request.open('GET', path);
+            request.onreadystatechange = function () {
+                if (request.readyState === 4 && request.status === 200) {
+                    parsePage(request.responseText, path);
+                }
+            };
+            request.send(null);
+        }
     }
-    nexTrackElement.className = 'playing';
-    player.src = nexTrackElement.attributes.musicPath.value;
-    player.play();
-  }
 
-  window.addEventListener('DOMContentLoaded', main);
+    function parsePage(page, path) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(page, 'text/html');
+        var links = doc.getElementsByTagName('a');
+        for (var i = 0; i < links.length; i++) {
+            var href = links[i].getAttribute('href');
+            if (href.slice(-1) === '/' && href.slice(0,4) !== 'http') {
+                if (href.slice(0, 1) !== '.') {
+                    download(path + href);
+                }
+            } else if (isFileNameValid(href) === true) {
+                addMusicUri(path, href);
+            }
+        }
+    }
+
+    function addMusicUri(dirPath, href) {
+        var newEntry = addElement(document.getElementById('list'), 'li', {
+            musicPath: [dirPath, href].join('')
+        });
+
+        var directory = addElement(newEntry, 'span', {'class': 'album'});
+        directory.appendChild(document.createTextNode(decodeURIComponent(dirPath)));
+
+        var fileName = addElement(newEntry, 'span', {'class': 'track'});
+        fileName.appendChild(document.createTextNode(decodeURIComponent(href)));
+
+        newEntry.addEventListener('click', playTrack);
+        if (href.search(configuration.autoplaySong) !== -1) {
+            newEntry.click();
+            configuration.autoplaySong = /^$/;
+        }
+    }
+
+    function isFileNameValid(filename) {
+        var extension = filename.split('.').slice(-1)[0];
+        return configuration.extensions.indexOf(extension) >= 0;
+    }
+
+    function playTrack(event) {
+        var currentTrackElement = playingListElement();
+        if (typeof(currentTrackElement) === 'object') {
+            currentTrackElement.className = '';
+        }
+
+        var nexTrackElement = event.target;
+        while (nexTrackElement.tagName.toLowerCase() !== 'li') {
+            nexTrackElement = nexTrackElement.parentElement;
+        }
+        nexTrackElement.className = 'playing';
+        player.src = nexTrackElement.attributes.musicPath.value;
+        player.play();
+    }
+
+    window.addEventListener('DOMContentLoaded', main);
 }());
 </script>
 <style>
@@ -173,14 +175,27 @@
   padding: 0;
   border : 0;
 }
+html, body {
+  margin: 0;
+  padding: 0;
+}
 html {
+  min-height: 100%;
   background: black;
   color: white;
 }
 body {
-  width: 100%;
+  margin: 0 0 30px;
 }
 audio {
+  width: 100%;
+}
+.audioWrapper {
+  background-color: #222;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  height: 30px;
   width: 100%;
 }
 li {

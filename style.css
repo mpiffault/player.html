@@ -3,14 +3,27 @@
   padding: 0;
   border : 0;
 }
+html, body {
+  margin: 0;
+  padding: 0;
+}
 html {
+  min-height: 100%;
   background: black;
   color: white;
 }
 body {
-  width: 100%;
+  margin: 0 0 30px;
 }
 audio {
+  width: 100%;
+}
+.audioWrapper {
+  background-color: #222;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  height: 30px;
   width: 100%;
 }
 li {
