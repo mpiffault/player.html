@@ -5,7 +5,6 @@
     var LEFT = 37;
     var RIGHT = 39;
     var player, tracksList, audioWrapper, listWrapper;
-    var BASE_LOCATION;
     var BASE_URL;
 
     var configuration = {
@@ -14,6 +13,8 @@
     };
 
     function main() {
+        var autoplaySong;
+        var path_array = [];
         listWrapper = addElement(document.body, 'div', {class: 'listWrapper'});
         tracksList = addElement(listWrapper, 'ul', {id: 'list'});
 
@@ -21,16 +22,16 @@
         player = addElement(audioWrapper, 'audio', {controls: ''});
         player.onended = endedHandler;
 
-        var autoplaySong = window.location.search.match(/auto=[^&]*/);
+        autoplaySong = window.location.search.match(/auto=[^&]*/);
         if (autoplaySong !== null) {
             configuration.autoplaySong = new RegExp(autoplaySong[0].slice(5), 'i');
         }
 
         // Recursion over subfolders
-        BASE_LOCATION = window.location.pathname.substring(0,
+        path_array[0] = window.location.pathname.substring(0,
             window.location.pathname.lastIndexOf('/') + 1);
         BASE_URL = window.location.protocol + '//' + window.location.host;
-        download(BASE_LOCATION);
+        download(path_array);
         document.addEventListener('keydown', keyboardHandler);
     }
 
@@ -93,12 +94,19 @@
     }
 
     function download(path) {
-        if (path.slice(-2) !== '//') {
+        if (path[path.length - 1].slice(-2) !== '//') {
             var request = new XMLHttpRequest();
-            request.open('GET', path);
+            var requestPath;
+
+            requestPath = path.join('');
+            request.open('GET', requestPath);
             request.onreadystatechange = function () {
+                var newPath = path.concat();
                 if (request.readyState === 4 && request.status === 200) {
-                    parsePage(request.responseText, path);
+                    parsePage(request.responseText, newPath);
+                } else if (request.readyState === 4) {
+                    console.log("path : " + requestPath);
+                    console.log("status : " + JSON.stringify(request));
                 }
             };
             request.send(null);
@@ -111,9 +119,11 @@
         var links = doc.getElementsByTagName('a');
         for (var i = 0; i < links.length; i++) {
             var href = links[i].getAttribute('href');
-            if (href.slice(-1) === '/' && href.slice(0,4) !== 'http') {
+            if (href.slice(-1) === '/' && href.slice(0, 4) !== 'http') {
                 if (href.slice(0, 1) !== '.') {
-                    download(path + href);
+                    path.push(href.substring(0, href.lastIndexOf('/') + 1));
+                    download(path.slice(0));
+                    path.pop();
                 }
             } else if (isFileNameValid(href) === true) {
                 addMusicUri(path, href);
@@ -123,11 +133,11 @@
 
     function addMusicUri(dirPath, href) {
         var newEntry = addElement(document.getElementById('list'), 'li', {
-            musicPath: [dirPath, href].join('')
+            musicPath: [dirPath.join(''), href].join('')
         });
 
         var directory = addElement(newEntry, 'span', {'class': 'album'});
-        directory.appendChild(document.createTextNode(decodeURIComponent(dirPath)));
+        directory.appendChild(document.createTextNode(decodeURIComponent(dirPath.join(''))));
 
         var fileName = addElement(newEntry, 'span', {'class': 'track'});
         fileName.appendChild(document.createTextNode(decodeURIComponent(href)));
