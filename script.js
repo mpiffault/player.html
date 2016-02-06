@@ -17,7 +17,6 @@
         var autoplaySong;
         var path_array = [];
         liste = addElement(document.body, 'div', {id: 'liste'});
-        //tracksList = addElement(listWrapper, 'ul', {id: 'liste'});
 
         audioWrapper = addElement(document.body, 'div', {class: 'audioWrapper'});
         player = addElement(audioWrapper, 'audio', {controls: ''});
@@ -168,17 +167,14 @@
             currentDiv = document.getElementById(currentPath);
             if (currentDiv == null) {
                 if (i === 0) {
-                    /*rootElement = addElement(liste, 'div', {
-                        class: 'root-path red'
-                    });*/
                     currentDiv = addElement(liste, 'div', {
-                       class: 'path r000 r900 red', id: currentPath
+                        class: 'path r000 r900 red', id: decodeURIComponent(currentPath), data_dir: decodeURIComponent(currentName)
                     });
                 } else {
                     parentDiv = document.getElementById(parentPath);
                     if (parentDiv != null) {
                         currentDiv = addElement(parentDiv, 'div', {
-                            class: currentColor + ' path', id: currentPath
+                            class: currentColor + ' path', id: decodeURIComponent(currentPath), data_dir: decodeURIComponent(currentName)
                         })
                     }
                 }

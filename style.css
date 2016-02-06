@@ -12,7 +12,7 @@
 }
 
 .path:before {
-  content: attr(id);
+  content: attr(data_dir);
 }
 
 .tracks {
