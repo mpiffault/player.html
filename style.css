@@ -1,47 +1,29 @@
-* {
-  margin : 0;
-  padding: 0;
-  border : 0;
+.liste {
+  width: 70%;
+  margin: 20px auto 0;
 }
-html, body {
-  margin: 0;
-  padding: 0;
+
+.path {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.26);
+  padding: 5px;
+  margin: 10px;
+  font-family: "RobotoDraft","Roboto",sans-serif;
+  font-size: 1.2rem;
 }
-html {
-  min-height: 100%;
-  background: black;
-  color: white;
+
+.path:before {
+  content: attr(id);
 }
-body {
-  margin: 0 0 30px;
+
+.tracks {
+  padding: 2px;
 }
-audio {
-  width: 100%;
-}
-.audioWrapper {
-  background-color: #222;
-  position: fixed;
-  left: 0;
-  bottom: 0;
-  height: 30px;
-  width: 100%;
-}
-li {
-  background:#222;
-  display:inline;
-  cursor: pointer;
-}
-li:after {
-  content:'\A';
-  white-space: pre;
-}
-.album {
-  color: #aaf;
-  padding-right:5px;
-}
+
 .track {
-  color: #fda;
+  line-height: 1.4rem;
+  font-size: 1.1rem;
 }
-.playing {
-  background: #444;
+
+.track:before {
+  content: '-> ';
 }

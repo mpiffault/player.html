@@ -10,7 +10,7 @@ echo '
 </script>
 <style>
 '
-cat style.css
+cat colors.css reset.css style.css
 echo '
 </style>
 </head>

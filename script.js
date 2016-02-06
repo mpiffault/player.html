@@ -4,8 +4,9 @@
     var SPACE = 32;
     var LEFT = 37;
     var RIGHT = 39;
-    var player, tracksList, audioWrapper, listWrapper;
+    var player, tracksList, audioWrapper, liste;
     var BASE_URL;
+    var elementsCount = 0;
 
     var configuration = {
         extensions: ['ogg', 'mp3', 'wav'],
@@ -15,8 +16,8 @@
     function main() {
         var autoplaySong;
         var path_array = [];
-        listWrapper = addElement(document.body, 'div', {class: 'listWrapper'});
-        tracksList = addElement(listWrapper, 'ul', {id: 'list'});
+        liste = addElement(document.body, 'div', {id: 'liste'});
+        //tracksList = addElement(listWrapper, 'ul', {id: 'liste'});
 
         audioWrapper = addElement(document.body, 'div', {class: 'audioWrapper'});
         player = addElement(audioWrapper, 'audio', {controls: ''});
@@ -44,9 +45,9 @@
             }
             event.preventDefault();
         } else if (event.keyCode === LEFT) {
-            changeSong(1);
-        } else if (event.keyCode === RIGHT) {
             changeSong(-1);
+        } else if (event.keyCode === RIGHT) {
+            changeSong(1);
         }
     }
 
@@ -59,22 +60,28 @@
     function changeSong(shift) {
         player.pause();
         var currentTrackElement = playingListElement();
+        var currentTrackNumber = parseInt(currentTrackElement.getAttribute('id').replace("t",""));
         var nextTrackElement;
-        if (shift === 1) {
-            nextTrackElement = currentTrackElement.nextElementSibling;
-        } else {
-            nextTrackElement = currentTrackElement.previousElementSibling;
+        var nextTrackNumber = currentTrackNumber + shift;
+
+        if (nextTrackNumber > 0) {
+            nextTrackElement = document.getElementById("t" + nextTrackNumber)
         }
-        player.src = nextTrackElement.attributes.musicPath.value;
-        currentTrackElement.className = '';
-        nextTrackElement.className = 'playing';
-        player.play();
+        if (nextTrackElement != null) {
+            player.src = nextTrackElement.attributes.musicPath.value;
+            currentTrackElement.className = currentTrackElement.className.replace(/\ba400\b/,'a100');
+            currentTrackElement.className = currentTrackElement.className.replace(/\bplaying\b/,'');
+
+            nextTrackElement.className = currentTrackElement.className.replace(/\ba100\b/,'a400');
+            nextTrackElement.className += ' playing';
+            player.play();
+        }
     }
 
     function playingListElement() {
         if (player.attributes.src !== undefined) {
-            var list = document.getElementById('list').childNodes;
-            for (var i = 0; i <= list.length; i++) {
+            var list = document.getElementsByClassName('track');
+            for (var i = 0; i < list.length; i++) {
                 if (list[i].attributes.musicPath.value === player.attributes.src.value) {
                     return list[i];
                 }
@@ -104,9 +111,6 @@
                 var newPath = path.concat();
                 if (request.readyState === 4 && request.status === 200) {
                     parsePage(request.responseText, newPath);
-                } else if (request.readyState === 4) {
-                    console.log("path : " + requestPath);
-                    console.log("status : " + JSON.stringify(request));
                 }
             };
             request.send(null);
@@ -132,14 +136,13 @@
     }
 
     function addMusicUri(dirPath, href) {
-        var newEntry = addElement(document.getElementById('list'), 'li', {
-            musicPath: [dirPath.join(''), href].join('')
+        var albumList = createPath(dirPath);
+
+        var newEntry = addElement(albumList, 'li', {
+            class: 'track a100', musicPath: [dirPath.join(''), href].join(''), id: "t" + ++elementsCount
         });
 
-        var directory = addElement(newEntry, 'span', {'class': 'album'});
-        directory.appendChild(document.createTextNode(decodeURIComponent(dirPath.join(''))));
-
-        var fileName = addElement(newEntry, 'span', {'class': 'track'});
+        var fileName = addElement(newEntry, 'span', {});
         fileName.appendChild(document.createTextNode(decodeURIComponent(href)));
 
         newEntry.addEventListener('click', playTrack);
@@ -147,6 +150,48 @@
             newEntry.click();
             configuration.autoplaySong = /^$/;
         }
+    }
+
+    function createPath(dirPath) {
+        var parentPath = "";
+        var currentPath = "";
+        var currentName;
+        var currentDiv;
+        var parentDiv;
+        var currentColor;
+        var albumList;
+        for (var i = 0; i < dirPath.length; i++) {
+            currentName = dirPath[i];
+            parentPath = currentPath;
+            currentPath += currentName;
+            currentColor = "r" + ((9 - i) * 100);
+            currentDiv = document.getElementById(currentPath);
+            if (currentDiv == null) {
+                if (i === 0) {
+                    /*rootElement = addElement(liste, 'div', {
+                        class: 'root-path red'
+                    });*/
+                    currentDiv = addElement(liste, 'div', {
+                       class: 'path r000 r900 red', id: currentPath
+                    });
+                } else {
+                    parentDiv = document.getElementById(parentPath);
+                    if (parentDiv != null) {
+                        currentDiv = addElement(parentDiv, 'div', {
+                            class: currentColor + ' path', id: currentPath
+                        })
+                    }
+                }
+            }
+        }
+        if (currentDiv.firstChild == null) {
+            albumList = addElement(currentDiv, 'ul', {
+               class: 'tracks a100'
+            });
+        } else {
+            albumList = currentDiv.firstChild;
+        }
+        return albumList;
     }
 
     function isFileNameValid(filename) {
@@ -157,15 +202,17 @@
     function playTrack(event) {
         var currentTrackElement = playingListElement();
         if (typeof(currentTrackElement) === 'object') {
-            currentTrackElement.className = '';
+            currentTrackElement.className = currentTrackElement.className.replace(/\ba400\b/,'a100');
+            currentTrackElement.className = currentTrackElement.className.replace(/\bplaying\b/,'');
         }
 
-        var nexTrackElement = event.target;
-        while (nexTrackElement.tagName.toLowerCase() !== 'li') {
-            nexTrackElement = nexTrackElement.parentElement;
+        var nextTrackElement = event.target;
+        while (nextTrackElement.tagName.toLowerCase() !== 'li') {
+            nextTrackElement = nextTrackElement.parentElement;
         }
-        nexTrackElement.className = 'playing';
-        player.src = nexTrackElement.attributes.musicPath.value;
+        nextTrackElement.className = nextTrackElement.className.replace(/\ba100\b/,'a400');
+        nextTrackElement.className += ' playing';
+        player.src = nextTrackElement.attributes.musicPath.value;
         player.play();
     }
 
