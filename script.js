@@ -168,13 +168,13 @@
             if (currentDiv == null) {
                 if (i === 0) {
                     currentDiv = addElement(liste, 'div', {
-                        class: 'path r000 r900 red', id: decodeURIComponent(currentPath), data_dir: decodeURIComponent(currentName)
+                        class: 'path r000 r900 red', id: currentPath, data_dir: decodeURIComponent(currentName)
                     });
                 } else {
                     parentDiv = document.getElementById(parentPath);
                     if (parentDiv != null) {
                         currentDiv = addElement(parentDiv, 'div', {
-                            class: currentColor + ' path', id: decodeURIComponent(currentPath), data_dir: decodeURIComponent(currentName)
+                            class: currentColor + ' path', id: currentPath, data_dir: decodeURIComponent(currentName)
                         })
                     }
                 }
